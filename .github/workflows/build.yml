@@ -11,23 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
+      - run: chmod +x gradlew
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      # (1) Build debug (firmado con debug key)
+      - name: Build extendedGithubDebug
+        run: ./gradlew :app:assembleExtendedGithubDebug
 
-      # Compila SOLO el variant que pasó en tu log
-      - name: Build extendedGithubRelease
-        run: ./gradlew :app:assembleExtendedGithubRelease
-
-      - name: Upload APK artifact
+      - name: Upload DEBUG APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-extended-github-release
-          path: app/build/outputs/apk/extendedGithub/release/*.apk
+          name: app-extended-github-debug
+          path: app/build/outputs/apk/extendedGithub/debug/*.apk
