@@ -8,6 +8,7 @@ import android.text.Html
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
+import android.view.WindowManager
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
@@ -23,7 +24,6 @@ import com.cylonid.nativealpha.util.EntryPointUtils.entryPointReached
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.edsuns.adfilter.AdFilter
 
-
 class MainActivity : AppCompatActivity() {
     private lateinit var webAppListFragment: WebAppListFragment
 
@@ -31,12 +31,28 @@ class MainActivity : AppCompatActivity() {
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Mantener la pantalla encendida siempre mientras esta Activity esté visible
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         webAppListFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_container_view) as WebAppListFragment
         entryPointReached(this)
 
+        // Si no hay sitios configurados aún, crear automáticamente el tuyo
         if (DataManager.getInstance().websites.size == 0) {
-            buildAddWebsiteDialog(getString(R.string.welcome_msg))
+            val url = "https://atencioncolas.chatup.pe/screen"
+            val newSite = WebApp(
+                url,
+                DataManager.getInstance().incrementedID,
+                DataManager.getInstance().incrementedOrder
+            )
+            newSite.applySettingsForNewWebApp()
+            DataManager.getInstance().addWebsite(newSite)
+            updateWebAppList()
+            // (Opcional) crear acceso directo automáticamente:
+            // val frag = ShortcutDialogFragment.newInstance(newSite)
+            // frag.show(supportFragmentManager, "SCFetcher-" + newSite.ID)
         }
 
         val fab = findViewById<FloatingActionButton>(R.id.fab)
@@ -44,12 +60,11 @@ class MainActivity : AppCompatActivity() {
         personalizeToolbar()
 
         AdblockLifecycleHelper(this).trySyncOperation({ AdFilter.create(applicationContext) })
-
     }
 
     override fun onResume() {
         super.onResume()
-        DataManager.getInstance().loadAppData();
+        DataManager.getInstance().loadAppData()
         updateWebAppList()
     }
 
@@ -82,15 +97,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         val id = item.itemId
 
         if (id == R.id.action_settings) {
@@ -139,7 +150,6 @@ class MainActivity : AppCompatActivity() {
                         .setNegativeButton(R.string.cancel) { _: DialogInterface?, _: Int -> }
                         .create()
                         .show()
-
                 }
             }
             .setNegativeButton(getString(R.string.cancel)) { _: DialogInterface?, _: Int -> }
@@ -183,8 +193,5 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
-
     }
 }
-
-
